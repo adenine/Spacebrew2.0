@@ -7,6 +7,7 @@ import os
 from paho.mqtt import client as mqtt_client
 import Spacebrew2Client as sb2 
 
+# Setup MQTT Broker details
 broker = 'localhost'
 port = 1883
 p_topic = "Spacebrew2/server"
