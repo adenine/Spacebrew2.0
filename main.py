@@ -6,13 +6,29 @@ import cmd
 import os 
 from paho.mqtt import client as mqtt_client
 import Spacebrew2Client as sb2 
+import argparse 
+
+# TODO:
+# DONE - Make it so that you can have multiple publishers or subsribers
+# DONE - Don't add a client unless it has a unique name
+# DONE - Pass in the server (broker) and port from CLI args
+# DONE - Chnage pubs and subs to have types: boolean, range, string, json
+# Add new types like image, audio, video 
+# Add an ability to start recording into a bag file and add the ability to play the bag file back
+# Create a web interface with the same capabilities as the CLI
+# Add error handling for file read/write operations
+# Add an ability to force clients to disconnect
+# Make it possible accept an MQTT message to create a new route
+# Make it possible accept an MQTT message to delete a route
+
+
 
 # Setup MQTT Broker details
 broker = 'localhost'
 port = 1883
 p_topic = "Spacebrew2/server"
 s_topic = "#" 
-client_id = 'Spacebrew2_Router'
+client_id = f'Spacebrew2_Router_{random.randint(0, 100000)}'
 ClientArray = []
 
 # --- Persistent Data Settings ---
@@ -198,6 +214,27 @@ class MyCLI(cmd.Cmd):
         else:
             print(f"🔴 **Disconnected** from MQTT Broker at {broker}:{port}")
 
+    def do_testclient(self, line):
+        """
+        Spawn a test client in a separate process.
+        Usage: testclient
+        """
+        import subprocess
+        try:
+            # Check if the file exists
+            if not os.path.exists("SpacebrewClientTest.py"):
+                print("❌ Error: 'SpacebrewClientTest.py' not found in the current directory.")
+                return
+
+            print("🚀 Spawning test client...")
+            # Run the script in a new process
+            # using sys.executable ensures we use the same python interpreter
+            subprocess.Popen([sys.executable, "SpacebrewClientTest.py"])
+            print("✅ Test client started in background.")
+            
+        except Exception as e:
+            print(f"❌ Error starting test client: {e}")
+
     def do_publish(self, line):
         """
         Publish an MQTT message. Usage: publish <topic> <message>
@@ -224,7 +261,7 @@ class MyCLI(cmd.Cmd):
         except Exception as e:
             print(f"An error occurred: {e}")
 
-def connect_mqtt():
+def connect_mqtt(broker_addr, broker_port):
     
     def on_connect(client, userdata, flags, reason_code):
         if reason_code != 0:
@@ -234,7 +271,7 @@ def connect_mqtt():
     client.on_connect = on_connect
     
     try:
-        client.connect(broker, port)
+        client.connect(broker_addr, broker_port)
         return client
     except Exception as e:
         print(f"Error connecting to broker: {e}")
@@ -249,11 +286,44 @@ def subscribe(client: mqtt_client):
         # --- Registration Logic (Silent) ---
         if msg.topic == "YuxiSpace":
             try:
-                p = msg.payload.decode().split(',')
-                # p[1] is assumed to be the client name
-                if not any(c.clientName == p[1] for c in ClientArray):
-                    tSb = sb2.Spacebrew2Cient(p[0],p[1],p[2],p[3]) 
-                    ClientArray.append(tSb)
+                # Format: name, desc, pubs(p1:t,p2:t), subs(s1:t,s2:t)
+                msg_str = msg.payload.decode()
+                
+                import re
+                # Regex to capture: name, desc, pubs(...), subs(...)
+                # This regex handles the format: name, desc, pubs(pub1:type, pub2:type), subs(sub1:type, sub2:type)
+                # It is robust to spaces around commas.
+                match = re.match(r'^([^,]+),\s*([^,]+),\s*pubs\((.*)\),\s*subs\((.*)\)$', msg_str)
+                
+                if match:
+                    name = match.group(1).strip()
+                    desc = match.group(2).strip()
+                    pubs_str = match.group(3).strip()
+                    subs_str = match.group(4).strip()
+                    
+                    # Parse pubs and subs lists
+                    # They are inside the parens: "pub1:type, pub2:type"
+                    pubs = [p.strip() for p in pubs_str.split(',')] if pubs_str else []
+                    subs = [s.strip() for s in subs_str.split(',')] if subs_str else []
+                    
+                    p = [name, desc, pubs, subs]
+                else:
+                     # Fallback to old split if regex fails (legacy support or simple format)
+                     p = msg_str.split(',')
+                     # If it was the old format, p[2] and p[3] are just single strings
+                     # We wrap them in lists to be consistent
+                     if len(p) >= 4:
+                         p[2] = [p[2].strip()]
+                         p[3] = [p[3].strip()]
+                
+                if len(p) >= 4:
+                    # p[0] is the client name
+                    if not any(c.clientName == p[0] for c in ClientArray):
+                        tSb = sb2.Spacebrew2Client(p[0],p[1],p[2],p[3]) 
+                        ClientArray.append(tSb)
+                        print(f"✅ Registered new client: {p[0]}")
+                    else:
+                        print(f"⚠️  Client rejected: Name '{p[0]}' already exists.")
                 
             except Exception as e:
                 print(f"[ERROR] Error processing registration: {e}")
@@ -272,11 +342,22 @@ def subscribe(client: mqtt_client):
 
 
 def run():
+    global broker, port
+    
+    # Parse CLI arguments
+    parser = argparse.ArgumentParser(description='Spacebrew 2.0 Router')
+    parser.add_argument('--server', type=str, default='localhost', help='MQTT Broker address')
+    parser.add_argument('--port', type=int, default=1883, help='MQTT Broker port')
+    args = parser.parse_args()
+    
+    broker = args.server
+    port = args.port
+
     # 1. Load routes from file on startup (creates file if necessary)
     load_routes()
     
     # 2. Connect to MQTT
-    client = connect_mqtt()
+    client = connect_mqtt(broker, port)
     subscribe(client)
     client.loop_start() 
     
