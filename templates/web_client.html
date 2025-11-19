@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacebrew Web Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            width: 300px;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+
+        .status {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .status.connected {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .toggle-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #e0e0e0;
+            color: #555;
+        }
+
+        .toggle-btn.active {
+            background-color: #4a90e2;
+            color: white;
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+        }
+
+        .client-name {
+            font-family: monospace;
+            background: #eee;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Web Client</h1>
+        <div class="status">
+            Client: <span id="client-name" class="client-name">...</span><br>
+            Status: <span id="connection-status">Connecting...</span>
+        </div>
+
+        <button id="toggle-btn" class="toggle-btn" onclick="toggle()">OFF</button>
+    </div>
+
+    <script>
+        // Generate unique client name
+        const clientName = 'WebClient_' + Math.floor(Math.random() * 10000);
+        document.getElementById('client-name').textContent = clientName;
+
+        // WebSocket Connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/client`);
+
+        let isConnected = false;
+        let toggleState = false;
+
+        ws.onopen = function () {
+            isConnected = true;
+            document.getElementById('connection-status').textContent = 'Connected';
+            document.getElementById('connection-status').classList.add('connected');
+
+            // Register Client
+            // Name, Desc, pubs(Toggle:boolean), subs(Toggle:boolean)
+            const regMsg = `${clientName},Web Client Button,pubs(Toggle:boolean),subs(Toggle:boolean)`;
+            ws.send(JSON.stringify({
+                cmd: 'register',
+                message: regMsg
+            }));
+
+            // Subscribe to our Toggle topic
+            // We expect routes to map TO us at "clientName/Toggle"
+            ws.send(JSON.stringify({
+                cmd: 'subscribe',
+                topic: `${clientName}/Toggle`
+            }));
+        };
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            // data: {topic: ..., message: ...}
+
+            if (data.topic === `${clientName}/Toggle`) {
+                // Received a toggle message
+                const msg = data.message.toLowerCase();
+                if (msg === 'true' || msg === 'on' || msg === '1') {
+                    setToggle(true);
+                } else if (msg === 'false' || msg === 'off' || msg === '0') {
+                    setToggle(false);
+                } else {
+                    // Toggle if it's just a trigger? Or maybe just set it.
+                    // Let's assume boolean string "true"/"false"
+                }
+            }
+        };
+
+        ws.onclose = function () {
+            isConnected = false;
+            document.getElementById('connection-status').textContent = 'Disconnected';
+            document.getElementById('connection-status').classList.remove('connected');
+        };
+
+        function setToggle(state) {
+            toggleState = state;
+            const btn = document.getElementById('toggle-btn');
+            if (toggleState) {
+                btn.classList.add('active');
+                btn.textContent = 'ON';
+            } else {
+                btn.classList.remove('active');
+                btn.textContent = 'OFF';
+            }
+        }
+
+        function toggle() {
+            if (!isConnected) return;
+
+            // Flip state locally? Or wait for echo?
+            // Usually we publish and let the route handle it.
+            // But for UI responsiveness we might want to toggle immediately?
+            // Let's just publish "true" or "false" based on NEW state.
+
+            const newState = !toggleState;
+            setToggle(newState); // Optimistic update
+
+            // Publish to our output topic: clientName/Toggle
+            ws.send(JSON.stringify({
+                cmd: 'publish',
+                topic: `${clientName}/Toggle`,
+                message: newState.toString()
+            }));
+        }
+    </script>
+</body>
+
+</html>

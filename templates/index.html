@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacebrew 2.0 Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4a90e2;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-connected {
+            color: green;
+            font-weight: bold;
+        }
+
+        .status-disconnected {
+            color: red;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button.delete {
+            background-color: #e74c3c;
+        }
+
+        button.delete:hover {
+            background-color: #c0392b;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .led {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ccc;
+            margin-right: 8px;
+            transition: background-color 0.1s;
+        }
+
+        .led.active {
+            background-color: #2ecc71;
+            box-shadow: 0 0 5px #2ecc71;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="flex">
+            <h1>Spacebrew 2.0 Dashboard</h1>
+            <div>
+                <a href="/webclient" target="_blank"
+                    style="margin-right: 15px; text-decoration: none; color: #4a90e2; font-weight: bold;">Open Web
+                    Client ↗</a>
+                <strong>Server:</strong> {{ broker }}:{{ port }} |
+                <strong>Status:</strong> <span id="connection-status" class="status-disconnected">Checking...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Registered Clients</h2>
+            <table id="clients-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Publishers</th>
+                        <th>Subscribers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Clients will be populated here -->
+                </tbody>
+            </table>
+            <br>
+            <button onclick="spawnTestClient()">Spawn Test Client</button>
+        </div>
+
+        <div class="card">
+            <h2>Routing Table</h2>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="pub-topic" placeholder="Publisher Topic">
+                <input type="text" id="sub-topic" placeholder="Subscriber Topic">
+                <button onclick="addRoute()">Add Route</button>
+            </div>
+            <table id="routes-table">
+                <thead>
+                    <tr>
+                        <th>Publisher</th>
+                        <th>Subscriber</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Routes will be populated here -->
+                </tbody>
+            </table>
+            <br>
+            <button onclick="saveRoutes()">Save Routes to File</button>
+        </div>
+
+        <div class="card">
+            <h2>Publish Message</h2>
+            <input type="text" id="pub-msg-topic" placeholder="Topic">
+            <input type="text" id="pub-msg-payload" placeholder="Message">
+            <button onclick="publishMessage()">Publish</button>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket Connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.pub && data.sub) {
+                blinkLed(data.pub);
+                blinkLed(data.sub);
+            }
+        };
+
+        function blinkLed(topic) {
+            // Find LED elements associated with this topic
+            // We use data attributes to find them
+            const leds = document.querySelectorAll(`.led[data-topic="${topic}"]`);
+            leds.forEach(led => {
+                led.classList.add('active');
+                setTimeout(() => led.classList.remove('active'), 200);
+            });
+        }
+
+        async function fetchStatus() {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            const statusEl = document.getElementById('connection-status');
+            if (data.connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-connected';
+            } else {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'status-disconnected';
+            }
+        }
+
+        async function fetchClients() {
+            const response = await fetch('/api/clients');
+            const clients = await response.json();
+            const tbody = document.querySelector('#clients-table tbody');
+            tbody.innerHTML = '';
+            clients.forEach(client => {
+                const row = `<tr>
+                    <td>${client.name}</td>
+                    <td>${client.description}</td>
+                    <td>${client.publishers.join(', ')}</td>
+                    <td>${client.subscribers.join(', ')}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function fetchRoutes() {
+            const response = await fetch('/api/routes');
+            const routes = await response.json();
+            const tbody = document.querySelector('#routes-table tbody');
+            tbody.innerHTML = '';
+            for (const [pub, sub] of Object.entries(routes)) {
+                const row = `<tr>
+                    <td><span class="led" data-topic="${pub}"></span>${pub}</td>
+                    <td><span class="led" data-topic="${sub}"></span>${sub}</td>
+                    <td><button class="delete" onclick="deleteRoute('${pub}')">Delete</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        }
+
+        async function addRoute() {
+            const pub = document.getElementById('pub-topic').value;
+            const sub = document.getElementById('sub-topic').value;
+            if (!pub || !sub) return alert('Please enter both topics');
+
+            await fetch('/api/routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pub, sub })
+            });
+            fetchRoutes();
+            document.getElementById('pub-topic').value = '';
+            document.getElementById('sub-topic').value = '';
+        }
+
+        async function deleteRoute(pub) {
+            await fetch(`/api/routes?pub=${encodeURIComponent(pub)}`, { method: 'DELETE' });
+            fetchRoutes();
+        }
+
+        async function saveRoutes() {
+            const res = await fetch('/api/save', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message);
+        }
+
+        async function spawnTestClient() {
+            const res = await fetch('/api/testclient', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message);
+            setTimeout(fetchClients, 2000); // Wait a bit for client to register
+        }
+
+        async function publishMessage() {
+            const topic = document.getElementById('pub-msg-topic').value;
+            const message = document.getElementById('pub-msg-payload').value;
+            if (!topic || !message) return alert('Please enter topic and message');
+
+            await fetch('/api/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, message })
+            });
+            alert('Message published');
+        }
+
+        // Initial load and polling
+        fetchStatus();
+        fetchClients();
+        fetchRoutes();
+        setInterval(fetchStatus, 5000);
+        setInterval(fetchClients, 5000);
+        setInterval(fetchRoutes, 5000);
+    </script>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
 # Spacebrew2 Router Routes: Publisher, Subscriber
 VirtualButton1/button,RGB_Lamp/Toggle
 VirtualButton2/button,VirtualButton1/bgcolor
+WebClient_2613/Toggle,VirtualButton1/bgcolor

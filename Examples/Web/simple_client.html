@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacebrew 2.0 - Simple Web Client Example</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .status {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .connected {
+            color: green;
+        }
+
+        .disconnected {
+            color: red;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #log {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Spacebrew Web Client Example</h1>
+
+        <div class="status">
+            Status: <span id="connection-status" class="disconnected">Disconnected</span>
+        </div>
+
+        <p>
+            This example demonstrates how to connect to Spacebrew 2.0 via WebSockets.<br>
+            It registers a publisher named <strong>button</strong> and a subscriber named <strong>background</strong>.
+        </p>
+
+        <!-- Publisher Interaction -->
+        <button id="btn" onclick="sendClick()">Click Me!</button>
+
+        <!-- Subscriber Output -->
+        <div id="log">Log messages will appear here...</div>
+    </div>
+
+    <script>
+        // =============================================================================
+        // Spacebrew 2.0 - Simple Web Client Example
+        // =============================================================================
+
+        // --- Configuration ---
+        // Generate a unique client name
+        const CLIENT_NAME = 'WebExample_' + Math.floor(Math.random() * 10000);
+        const DESCRIPTION = 'A simple web client example.';
+
+        // --- Publishers and Subscribers ---
+        // Format: "name:type"
+        const PUBLISHERS = [
+            "button:boolean" // We will send true/false
+        ];
+
+        const SUBSCRIBERS = [
+            "background:string" // We will receive color strings
+        ];
+
+        // --- WebSocket Connection ---
+        // Connect to the Spacebrew Router's WebSocket endpoint
+        // Note: Ensure the Spacebrew server is running on localhost:8088
+        const wsUrl = 'ws://localhost:8088/ws/client';
+        const ws = new WebSocket(wsUrl);
+
+        const statusEl = document.getElementById('connection-status');
+        const logEl = document.getElementById('log');
+
+        function log(msg) {
+            logEl.innerHTML += `<div>${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        ws.onopen = function () {
+            statusEl.textContent = 'Connected';
+            statusEl.className = 'connected';
+            log('✅ Connected to Spacebrew Server');
+
+            // --- Registration ---
+            // Send a registration message immediately after connecting.
+            // Format: Name, Description, pubs(p1:t, p2:t), subs(s1:t, s2:t)
+
+            const pubsStr = PUBLISHERS.join(', ');
+            const subsStr = SUBSCRIBERS.join(', ');
+
+            const regMsg = `${CLIENT_NAME}, ${DESCRIPTION}, pubs(${pubsStr}), subs(${subsStr})`;
+
+            ws.send(JSON.stringify({
+                cmd: 'register',
+                message: regMsg
+            }));
+            log(`📤 Sent Registration: ${regMsg}`);
+
+            // --- Subscribe to Input Topics ---
+            // We need to tell the server via WebSocket that we want to listen to specific topics.
+            // The server routes messages to: "ClientName/SubscriberName"
+
+            SUBSCRIBERS.forEach(sub => {
+                const subName = sub.split(':')[0];
+                const topic = `${CLIENT_NAME}/${subName}`;
+
+                ws.send(JSON.stringify({
+                    cmd: 'subscribe',
+                    topic: topic
+                }));
+                log(`👂 Subscribed to topic: ${topic}`);
+            });
+        };
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            // data structure: { topic: "...", message: "..." }
+
+            log(`📩 Received on ${data.topic}: ${data.message}`);
+
+            // --- Handle Incoming Messages ---
+            // Check if the message is for our background subscriber
+            if (data.topic === `${CLIENT_NAME}/background`) {
+                document.body.style.backgroundColor = data.message;
+                log(`🎨 Changed background color to ${data.message}`);
+            }
+        };
+
+        ws.onclose = function () {
+            statusEl.textContent = 'Disconnected';
+            statusEl.className = 'disconnected';
+            log('🔴 Disconnected from server');
+        };
+
+        // --- Publishing Data ---
+        function sendClick() {
+            if (ws.readyState === WebSocket.OPEN) {
+                // Publish "true" to our button publisher
+                // Topic: ClientName/PublisherName
+                const topic = `${CLIENT_NAME}/button`;
+                const message = "true";
+
+                ws.send(JSON.stringify({
+                    cmd: 'publish',
+                    topic: topic,
+                    message: message
+                }));
+                log(`📤 Published: ${message} to ${topic}`);
+            } else {
+                log('⚠️ Not connected to server');
+            }
+        }
+    </script>
+</body>
+
+</html>
