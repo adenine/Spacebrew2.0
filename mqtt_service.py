@@ -10,7 +10,7 @@ class SpacebrewMQTT:
         self.broker = broker
         self.port = port
         self.client_id = f'Spacebrew2_Router_{random.randint(0, 100000)}'
-        self.client = mqtt_client.Client(self.client_id)
+        self.client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION1, self.client_id)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         
