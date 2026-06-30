@@ -55,6 +55,21 @@ python3 main.py --server 192.168.1.100 --port 1883
 
 ## Usage
 
+### Tray App
+Instead of running `main.py` from a terminal, you can run Spacebrew as a system tray / menu bar app:
+
+```bash
+python3 tray_app.py
+```
+
+This adds a Spacebrew icon to your tray with:
+-   **Server Running**: toggles the MQTT router and web server on/off (no terminal required).
+-   **Settings...**: edit the broker address/port and web admin port (saved to `spacebrew_config.json`; restart the server from the menu to apply).
+-   **Open Web Admin**: opens the web dashboard in your default browser.
+-   **Quit**: stops the server and exits.
+
+> Settings are edited in a small Tkinter window. On Linux, Tkinter may need a separate package, e.g. `sudo apt install python3-tk`.
+
 ### Web Interface
 Open your browser and navigate to `http://localhost:8088` (or the IP address of the machine running the server).
 -   **Dashboard**: View registered clients and current routes.
