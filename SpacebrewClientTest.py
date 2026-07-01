@@ -57,7 +57,7 @@ def register(client):
 
 # --- Main Execution ---
 def run():
-    client = mqtt.Client(CLIENT_NAME)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, CLIENT_NAME)
     client.on_connect = on_connect
     client.on_message = on_message
 

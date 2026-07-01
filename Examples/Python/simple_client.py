@@ -38,7 +38,7 @@ SUBSCRIBERS = [
 ]
 
 # --- MQTT Setup ---
-client = mqtt_client.Client(CLIENT_NAME)
+client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION1, CLIENT_NAME)
 
 # Last Will: if this client's connection drops uncleanly (crash, network loss,
 # power cut), the broker publishes this on our behalf so the router can
