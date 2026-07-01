@@ -1,0 +1,219 @@
+.app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 20px 80px;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--sb-border);
+  border-top: 4px solid var(--sb-orange);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.card.publish {
+  border-top-color: var(--sb-purple);
+}
+
+.card.routing-list {
+  border-top-color: var(--sb-pub);
+}
+
+.card.testing-tools {
+  border-top-color: var(--sb-black);
+}
+
+.routing-list__empty {
+  color: #888;
+  font-size: 0.9em;
+}
+
+.routing-list__save-row {
+  margin-top: 16px;
+}
+
+/* Header */
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header h1 {
+  margin: 0;
+}
+
+.app-header__status {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.app-header__link {
+  color: var(--sb-purple);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.status-connected {
+  color: #00a35c;
+  font-weight: bold;
+}
+
+.status-disconnected {
+  color: var(--sb-red);
+  font-weight: bold;
+}
+
+/* Footer */
+
+.app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
+  background: var(--sb-footer);
+  color: white;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.app-footer .wordmark {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.95em;
+}
+
+.app-footer .wordmark::before,
+.app-footer .wordmark::after {
+  content: "\25CF";
+  color: var(--sb-orange);
+  font-size: 0.6em;
+  vertical-align: middle;
+  margin: 0 8px;
+  position: relative;
+  top: -2px;
+}
+
+.app-footer a {
+  color: #bbb;
+  text-decoration: none;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.app-footer a:hover {
+  color: white;
+}
+
+/* Publish panel */
+
+.publish__row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.publish__row--actions {
+  align-items: center;
+}
+
+/* Patch bay layout */
+
+.patchbay {
+  display: flex;
+  gap: 80px;
+  overflow-x: auto;
+}
+
+.patchbay__sidebar-wrap {
+  flex: 0 0 252px;
+}
+
+.patchbay__graph {
+  flex: 1 1 auto;
+  min-width: 660px;
+}
+
+.patchbay__columns {
+  display: flex;
+  justify-content: space-between;
+}
+
+.patchbay__column-label {
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sb-border);
+  margin-bottom: 16px;
+}
+
+.patchbay__column-label--sub {
+  text-align: right;
+}
+
+/* Clients sidebar */
+
+.clients-sidebar {
+  position: relative;
+}
+
+.client-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.client-row__led {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-top: 4px;
+  transition: background-color 0.1s;
+}
+
+.client-row__led--active {
+  background-color: #00c977;
+  box-shadow: 0 0 6px #00c977;
+}
+
+.client-row__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.client-row__name {
+  font-weight: 700;
+  overflow-wrap: break-word;
+}
+
+.client-row__desc {
+  font-size: 0.8em;
+  color: #888;
+  overflow-wrap: break-word;
+}
+
+.client-row__message {
+  font-family: monospace;
+  font-size: 0.8em;
+  color: #666;
+  overflow-wrap: break-word;
+}
