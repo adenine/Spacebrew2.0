@@ -132,7 +132,7 @@ class SpacebrewTrayApp:
         subprocess.Popen([SETTINGS_PYTHON, os.path.join(APP_DIR, "settings_window.py")])
 
     def open_web_admin(self, icon, item):
-        webbrowser.open(f"http://localhost:{self.config.get('web_port', 8088)}")
+        webbrowser.open(f"http://localhost:{self.config.get('web_port', 8088)}/app/")
 
     def quit_app(self, icon, item):
         self.stop_server()

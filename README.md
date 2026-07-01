@@ -22,6 +22,7 @@ Before running Spacebrew 2.0, you need:
     -   **Mac (Homebrew)**: `brew install mosquitto` -> `brew services start mosquitto`
     -   **Linux (apt)**: `sudo apt install mosquitto` -> `sudo systemctl start mosquitto`
     -   **Windows**: Download and install from [mosquitto.org](https://mosquitto.org/download/).
+3.  **Node.js 18+**: Only needed to build the new web admin SPA (see [Web Admin](#web-admin-new) below).
 
 ## Installation
 
@@ -69,7 +70,7 @@ On macOS, you can instead double-click `Spacebrew.command` in Finder, which open
 This adds a Spacebrew icon to your tray with:
 -   **Start Server / Stop Server**: toggles the MQTT router and web server on/off (no terminal required).
 -   **Settings...**: edit the broker address/port and web admin port (saved to `spacebrew_config.json`; restart the server from the menu to apply).
--   **Open Web Admin**: opens the web dashboard in your default browser.
+-   **Open Web Admin**: opens the [new web admin SPA](#web-admin-new) (`/app/`) in your default browser — build it first (see below) or this will 404.
 -   **Quit**: stops the server and exits.
 
 > Settings are edited in a small Tkinter window. On Linux, Tkinter may need a separate package, e.g. `sudo apt install python3-tk`. On macOS, if the settings window appears blank, install a modern Tk via `brew install python-tk@3.11` — the bundled system Tk (8.5) doesn't render correctly in Dark Mode.
@@ -81,6 +82,26 @@ Open your browser and navigate to `http://localhost:8088` (or the IP address of 
 -   **Add Route**: Select a publisher and subscriber to create a connection.
 -   **Visual Feedback**: LEDs blink when messages are routed.
 -   **Web Client**: Click "Open Web Client" to launch a browser-based client for testing.
+
+### Web Admin (New)
+A React + Rete.js rebuild of the dashboard, styled after the original 2012 Spacebrew admin UI, with a visual patch bay for connecting publishers to subscribers by dragging or clicking between sockets. This is what the tray app's **Open Web Admin** menu item opens.
+
+It has to be built once before the server can serve it (this produces `web/dist`, which is gitignored — rebuild after pulling changes to `web/`):
+
+```bash
+cd web
+npm install
+npm run build
+```
+
+Then restart the Spacebrew server and open `http://localhost:8088/app/`.
+
+For active frontend development, run the Vite dev server instead (proxies `/api` and `/ws` to the Python backend on `:8088`, with hot reload):
+
+```bash
+cd web
+npm run dev
+```
 
 ### Command Line Interface (CLI)
 The terminal running `main.py` also provides a CLI for management:
