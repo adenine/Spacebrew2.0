@@ -40,6 +40,11 @@ SUBSCRIBERS = [
 # --- MQTT Setup ---
 client = mqtt_client.Client(CLIENT_NAME)
 
+# Last Will: if this client's connection drops uncleanly (crash, network loss,
+# power cut), the broker publishes this on our behalf so the router can
+# deregister us. Must be set before connect().
+client.will_set("YuxiSpace/leave", payload=CLIENT_NAME, qos=1)
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"✅ Connected to Spacebrew Server at {BROKER}:{PORT}")
@@ -98,6 +103,9 @@ def run():
             
     except KeyboardInterrupt:
         print("\nStopping client...")
+        # A clean disconnect does NOT trigger the will message above, so
+        # deregister explicitly here.
+        client.publish("YuxiSpace/leave", CLIENT_NAME).wait_for_publish()
         client.loop_stop()
         client.disconnect()
 

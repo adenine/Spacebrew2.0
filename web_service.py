@@ -38,6 +38,7 @@ class ConnectionManager:
 class WebClientManager:
     def __init__(self):
         self.active_connections: dict[WebSocket, set[str]] = {}
+        self.client_names: dict[WebSocket, str] = {}
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -46,6 +47,13 @@ class WebClientManager:
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             del self.active_connections[websocket]
+        self.client_names.pop(websocket, None)
+
+    def register(self, websocket: WebSocket, name: str):
+        self.client_names[websocket] = name
+
+    def get_name(self, websocket: WebSocket):
+        return self.client_names.get(websocket)
 
     def subscribe(self, websocket: WebSocket, topic: str):
         if websocket in self.active_connections:
@@ -78,10 +86,10 @@ class SpacebrewWebServer:
         # Register callbacks with MQTT service
         # Note: These callbacks will be called from MQTT thread, so we need threadsafe execution
         
-        def on_route_activity(pub, sub):
+        def on_route_activity(pub, sub, message):
             if self.loop:
                 asyncio.run_coroutine_threadsafe(
-                    self.manager.broadcast({"pub": pub, "sub": sub}), 
+                    self.manager.broadcast({"pub": pub, "sub": sub, "message": message}),
                     self.loop
                 )
 
@@ -89,6 +97,12 @@ class SpacebrewWebServer:
             if self.loop:
                 asyncio.run_coroutine_threadsafe(
                     self.web_client_manager.broadcast(topic, message),
+                    self.loop
+                )
+                # Also notify the dashboard so it can show the last message
+                # seen on any given client's topics, routed or not.
+                asyncio.run_coroutine_threadsafe(
+                    self.manager.broadcast({"topic": topic, "message": message}),
                     self.loop
                 )
 
@@ -134,21 +148,28 @@ class SpacebrewWebServer:
                     if cmd == "register":
                         msg = data.get("message")
                         if msg:
+                            self.web_client_manager.register(websocket, msg.split(",")[0].strip())
                             self.mqtt_service.publish("YuxiSpace", msg)
-                            
+
                     elif cmd == "publish":
                         topic = data.get("topic")
                         payload = data.get("message")
                         if topic and payload:
                             self.mqtt_service.publish(topic, payload)
-                            
+
                     elif cmd == "subscribe":
                         topic = data.get("topic")
                         if topic:
                             self.web_client_manager.subscribe(websocket, topic)
-                            
+
             except WebSocketDisconnect:
+                # A web client's browser tab closing/navigating away is the
+                # equivalent of an MQTT client dropping its connection, so
+                # deregister it from the router the same way a Last Will would.
+                name = self.web_client_manager.get_name(websocket)
                 self.web_client_manager.disconnect(websocket)
+                if name:
+                    self.router.remove_client(name)
 
         @app.get("/api/status")
         async def get_status():

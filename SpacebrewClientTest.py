@@ -35,6 +35,11 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     print(f"📩 Received message on {msg.topic}: {msg.payload.decode()}")
 
+def leave(client):
+    # A clean disconnect doesn't trigger the will message set in run(), so
+    # deregister explicitly before disconnecting.
+    client.publish("YuxiSpace/leave", CLIENT_NAME).wait_for_publish()
+
 def register(client):
     """
     Constructs and sends the registration string.
@@ -55,6 +60,10 @@ def run():
     client = mqtt.Client(CLIENT_NAME)
     client.on_connect = on_connect
     client.on_message = on_message
+
+    # Last Will: if this client's connection drops uncleanly, the broker
+    # publishes this on our behalf so the router can deregister us.
+    client.will_set("YuxiSpace/leave", payload=CLIENT_NAME, qos=1)
     
     try:
         print(f"Connecting to {BROKER}...")
@@ -100,11 +109,13 @@ def run():
             time.sleep(1)
             
         print("Done sending messages. Exiting.")
+        leave(client)
         client.loop_stop()
         client.disconnect()
-            
+
     except KeyboardInterrupt:
         print("\nDisconnecting...")
+        leave(client)
         client.loop_stop()
         client.disconnect()
     except Exception as e:

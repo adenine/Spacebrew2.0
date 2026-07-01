@@ -70,10 +70,15 @@ class SpacebrewRouter:
         # Check for duplicate name
         if any(c.clientName == name for c in self.clients):
             return False, f"Client rejected: Name '{name}' already exists."
-        
+
         new_client = sb2.Spacebrew2Client(name, desc, pubs, subs)
         self.clients.append(new_client)
         return True, f"Registered new client: {name}"
+
+    def remove_client(self, name):
+        before = len(self.clients)
+        self.clients = [c for c in self.clients if c.clientName != name]
+        return len(self.clients) < before
 
     def get_clients_data(self):
         return [

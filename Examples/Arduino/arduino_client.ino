@@ -72,6 +72,14 @@ void setup() {
   // You can provide a unique ID to the MQTT client here if needed
   mqttClient.setId(clientName);
 
+  // Last Will: if this board loses power or drops off the network without a
+  // clean disconnect, the broker publishes this on our behalf so the router
+  // can deregister us. Must be set before connect().
+  String willPayload = String(clientName);
+  mqttClient.beginWill("YuxiSpace/leave", willPayload.length(), false, 1);
+  mqttClient.print(willPayload);
+  mqttClient.endWill();
+
   Serial.print("Attempting to connect to the MQTT broker: ");
   Serial.println(broker);
 

@@ -55,7 +55,12 @@ class SpacebrewMQTT:
         # 1. Registration Logic
         if msg.topic == "YuxiSpace":
             self.handle_registration(payload_str)
-        
+
+        # 1b. Deregistration Logic (explicit leave, or a broker-fired Last Will
+        # message when a client's connection drops uncleanly)
+        if msg.topic == "YuxiSpace/leave":
+            self.handle_deregistration(payload_str)
+
         # 2. Routing Logic
         if msg.topic in self.router.routes:
             sub_topic = self.router.routes[msg.topic]
@@ -63,7 +68,7 @@ class SpacebrewMQTT:
             
             # Notify listener (WebService) about route activity
             if self.on_route_activity:
-                self.on_route_activity(msg.topic, sub_topic)
+                self.on_route_activity(msg.topic, sub_topic, payload_str)
 
         # 3. Forward to Web Clients (if applicable)
         if self.on_client_message:
@@ -105,3 +110,7 @@ class SpacebrewMQTT:
 
         except Exception as e:
             print(f"[ERROR] Error processing registration: {e}")
+
+    def handle_deregistration(self, name):
+        if self.router.remove_client(name.strip()):
+            print(f"👋 Client disconnected: {name.strip()}")

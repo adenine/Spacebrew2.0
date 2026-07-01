@@ -38,7 +38,12 @@ void setup() {
   background(0);
   
   client = new MQTTClient(this);
-  
+
+  // Last Will: if this sketch closes or loses its connection without a clean
+  // disconnect, the broker publishes this on our behalf so the router can
+  // deregister us. Must be set before connect().
+  client.setWill("YuxiSpace/leave", clientName);
+
   // Connect to broker
   // Ensure your Spacebrew server (main.py) is running on port 1883
   client.connect(broker, "processing_client_" + int(random(1000)));
