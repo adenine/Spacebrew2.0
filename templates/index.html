@@ -6,38 +6,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spacebrew 2.0 Dashboard</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 20px;
+        :root {
+            --sb-orange: #ffae00;
+            --sb-purple: #c600f8;
+            --sb-red: #ff0000;
+            --sb-black: #111111;
+            --sb-pub: #a8b6ff;
+            --sb-sub: #b1ffd8;
+            --sb-footer: #333333;
+            --sb-border: #e2e2e2;
         }
 
-        h1 {
-            color: #4a90e2;
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: var(--sb-black);
+            margin: 0;
+            padding: 0;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding: 30px 20px 0;
+            min-height: calc(100vh - 60px);
+        }
+
+        h1 {
+            font-size: 1.4em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        h1::before {
+            content: "/ ";
+            color: var(--sb-orange);
+        }
+
+        h2 {
+            font-size: 1em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 15px;
+            color: #444;
+        }
+
+        h2::before {
+            content: "/ ";
+            color: var(--sb-purple);
         }
 
         .card {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+            border: 1px solid var(--sb-border);
+            border-top: 4px solid var(--sb-orange);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .card.routing {
+            border-top-color: var(--sb-pub);
+        }
+
+        .card.publish {
+            border-top-color: var(--sb-purple);
         }
 
         .status-connected {
-            color: green;
+            color: #00a35c;
             font-weight: bold;
         }
 
         .status-disconnected {
-            color: red;
+            color: var(--sb-red);
             font-weight: bold;
         }
 
@@ -50,40 +98,78 @@
         th,
         td {
             text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--sb-border);
         }
 
         th {
-            background-color: #f8f9fa;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 8px;
+        }
+
+        .badge.pub {
+            background: var(--sb-pub);
+            color: #1c2a6b;
+        }
+
+        .badge.sub {
+            background: var(--sb-sub);
+            color: #0a5c37;
+        }
+
+        .msg-cell {
+            font-family: monospace;
+            color: #666;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         button {
-            background-color: #4a90e2;
+            background-color: var(--sb-orange);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 8px 18px;
+            border-radius: 20px;
             cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            letter-spacing: 0.5px;
         }
 
         button:hover {
-            background-color: #357abd;
+            background-color: #e09b00;
         }
 
         button.delete {
-            background-color: #e74c3c;
+            background-color: var(--sb-red);
         }
 
         button.delete:hover {
-            background-color: #c0392b;
+            background-color: #cc0000;
         }
 
         input,
         select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 8px 10px;
+            border: 1px solid var(--sb-border);
+            border-radius: 20px;
             margin-right: 10px;
         }
 
@@ -104,8 +190,46 @@
         }
 
         .led.active {
-            background-color: #2ecc71;
-            box-shadow: 0 0 5px #2ecc71;
+            background-color: var(--sb-sub);
+            box-shadow: 0 0 6px #00c977;
+        }
+
+        footer {
+            margin-top: 40px;
+            background: var(--sb-footer);
+            color: white;
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        footer .wordmark {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.95em;
+        }
+
+        footer .wordmark::before,
+        footer .wordmark::after {
+            content: "\25CF";
+            color: var(--sb-orange);
+            font-size: 0.6em;
+            vertical-align: middle;
+            margin: 0 8px;
+        }
+
+        footer a {
+            color: #bbb;
+            text-decoration: none;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        footer a:hover {
+            color: white;
         }
     </style>
 </head>
@@ -116,7 +240,7 @@
             <h1>Spacebrew 2.0 Dashboard</h1>
             <div>
                 <a href="/webclient" target="_blank"
-                    style="margin-right: 15px; text-decoration: none; color: #4a90e2; font-weight: bold;">Open Web
+                    style="margin-right: 15px; text-decoration: none; color: var(--sb-purple); font-weight: bold;">Open Web
                     Client ↗</a>
                 <strong>Server:</strong> {{ broker }}:{{ port }} |
                 <strong>Status:</strong> <span id="connection-status" class="status-disconnected">Checking...</span>
@@ -132,6 +256,7 @@
                         <th>Description</th>
                         <th>Publishers</th>
                         <th>Subscribers</th>
+                        <th>Message</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,7 +267,7 @@
             <button onclick="spawnTestClient()">Spawn Test Client</button>
         </div>
 
-        <div class="card">
+        <div class="card routing">
             <h2>Routing Table</h2>
             <div style="margin-bottom: 15px;">
                 <input type="text" id="pub-topic" placeholder="Publisher Topic">
@@ -165,7 +290,7 @@
             <button onclick="saveRoutes()">Save Routes to File</button>
         </div>
 
-        <div class="card">
+        <div class="card publish">
             <h2>Publish Message</h2>
             <input type="text" id="pub-msg-topic" placeholder="Topic">
             <input type="text" id="pub-msg-payload" placeholder="Message">
@@ -173,16 +298,32 @@
         </div>
     </div>
 
+    <footer>
+        <span class="wordmark">Spacebrew</span>
+        <a href="https://github.com/adenine/Spacebrew2.0" target="_blank">Source on GitHub</a>
+    </footer>
+
     <script>
         // WebSocket Connection
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+        // Last message seen per topic, keyed by full topic name
+        // ("clientName/pubOrSubName"). Populated from every MQTT message,
+        // not just routed ones, and survives the clients table's poll-driven
+        // refresh since it's kept outside the DOM.
+        const topicMessages = {};
 
         ws.onmessage = function (event) {
             const data = JSON.parse(event.data);
             if (data.pub && data.sub) {
                 blinkLed(data.pub);
                 blinkLed(data.sub);
+            }
+            if (data.topic) {
+                topicMessages[data.topic] = { message: data.message, ts: Date.now() };
+                updateClientMessageCells();
+                blinkClientLed(data.topic);
             }
         };
 
@@ -193,6 +334,42 @@
             leds.forEach(led => {
                 led.classList.add('active');
                 setTimeout(() => led.classList.remove('active'), 200);
+            });
+        }
+
+        function blinkClientLed(topic) {
+            // Client LEDs cover multiple topics (all of that client's pubs/subs),
+            // so they're matched against a comma-separated list instead of one topic.
+            document.querySelectorAll('.led[data-topics]').forEach(led => {
+                if (led.dataset.topics.split(',').includes(topic)) {
+                    led.classList.add('active');
+                    setTimeout(() => led.classList.remove('active'), 200);
+                }
+            });
+        }
+
+        // A client's pub/sub entries are "name:type" strings; the actual
+        // MQTT topic they communicate on is "clientName/name".
+        function clientTopics(client) {
+            const names = [...client.publishers, ...client.subscribers].map(entry => entry.split(':')[0].trim());
+            return names.map(name => `${client.name}/${name}`);
+        }
+
+        function latestMessageForTopics(topics) {
+            let latest = null;
+            for (const topic of topics) {
+                const entry = topicMessages[topic];
+                if (entry && (!latest || entry.ts > latest.ts)) {
+                    latest = entry;
+                }
+            }
+            return latest ? latest.message : '—';
+        }
+
+        function updateClientMessageCells() {
+            document.querySelectorAll('.msg-cell').forEach(cell => {
+                const topics = cell.dataset.topics ? cell.dataset.topics.split(',') : [];
+                cell.textContent = latestMessageForTopics(topics);
             });
         }
 
@@ -215,13 +392,17 @@
             const tbody = document.querySelector('#clients-table tbody');
             tbody.innerHTML = '';
             clients.forEach(client => {
-                const row = `<tr>
-                    <td>${client.name}</td>
+                const topics = clientTopics(client);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="led" data-topics="${topics.join(',')}"></span>${client.name}</td>
                     <td>${client.description}</td>
                     <td>${client.publishers.join(', ')}</td>
                     <td>${client.subscribers.join(', ')}</td>
-                </tr>`;
-                tbody.innerHTML += row;
+                    <td class="msg-cell" data-topics="${topics.join(',')}"></td>
+                `;
+                row.querySelector('.msg-cell').textContent = latestMessageForTopics(topics);
+                tbody.appendChild(row);
             });
         }
 
@@ -231,12 +412,13 @@
             const tbody = document.querySelector('#routes-table tbody');
             tbody.innerHTML = '';
             for (const [pub, sub] of Object.entries(routes)) {
-                const row = `<tr>
-                    <td><span class="led" data-topic="${pub}"></span>${pub}</td>
-                    <td><span class="led" data-topic="${sub}"></span>${sub}</td>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="led" data-topic="${pub}"></span><span class="badge pub">Pub</span>${pub}</td>
+                    <td><span class="led" data-topic="${sub}"></span><span class="badge sub">Sub</span>${sub}</td>
                     <td><button class="delete" onclick="deleteRoute('${pub}')">Delete</button></td>
-                </tr>`;
-                tbody.innerHTML += row;
+                `;
+                tbody.appendChild(row);
             }
         }
 
