@@ -7,9 +7,11 @@ Spacebrew 2.0 is a router that sits between your interactive devices (clients) a
 ## Features
 - **Dynamic Routing**: Connect publishers to subscribers on the fly via a web interface or CLI.
 - **Multiple Pubs/Subs**: Clients can have multiple publishers and subscribers.
-- **Web Interface**: A real-time dashboard to manage clients, routes, and visualize activity.
+- **Web Interface**: A real-time dashboard to manage clients, routes, and visualize activity, with live message content and per-client activity indicators.
 - **WebSocket Gateway**: Connect web-based clients directly to the Spacebrew network.
+- **Automatic Disconnect Detection**: Clients that crash, lose power, or close their connection are automatically deregistered — no polling required.
 - **Persistence**: Routes are automatically saved and loaded.
+- **Tray App**: Run the server as a menu bar app instead of a terminal process.
 
 ## Prerequisites
 
@@ -62,17 +64,20 @@ Instead of running `main.py` from a terminal, you can run Spacebrew as a system 
 python3 tray_app.py
 ```
 
+On macOS, you can instead double-click `Spacebrew.command` in Finder, which opens a Terminal window and launches the tray app for you.
+
 This adds a Spacebrew icon to your tray with:
--   **Server Running**: toggles the MQTT router and web server on/off (no terminal required).
+-   **Start Server / Stop Server**: toggles the MQTT router and web server on/off (no terminal required).
 -   **Settings...**: edit the broker address/port and web admin port (saved to `spacebrew_config.json`; restart the server from the menu to apply).
 -   **Open Web Admin**: opens the web dashboard in your default browser.
 -   **Quit**: stops the server and exits.
 
-> Settings are edited in a small Tkinter window. On Linux, Tkinter may need a separate package, e.g. `sudo apt install python3-tk`.
+> Settings are edited in a small Tkinter window. On Linux, Tkinter may need a separate package, e.g. `sudo apt install python3-tk`. On macOS, if the settings window appears blank, install a modern Tk via `brew install python-tk@3.11` — the bundled system Tk (8.5) doesn't render correctly in Dark Mode.
 
 ### Web Interface
 Open your browser and navigate to `http://localhost:8088` (or the IP address of the machine running the server).
 -   **Dashboard**: View registered clients and current routes.
+-   **Registered Clients**: Shows each client's publishers/subscribers, the last message seen on any of their topics, and an indicator dot that blinks on new activity.
 -   **Add Route**: Select a publisher and subscriber to create a connection.
 -   **Visual Feedback**: LEDs blink when messages are routed.
 -   **Web Client**: Click "Open Web Client" to launch a browser-based client for testing.
@@ -88,10 +93,16 @@ The terminal running `main.py` also provides a CLI for management:
 ## Examples
 
 Check the `Examples` folder for client implementations:
--   **Python**: `Examples/simple_client.py`
--   **Web (JS/HTML)**: `Examples/simple_client.html`
--   **Arduino**: `Examples/arduino_client.ino`
--   **Processing**: `Examples/processing_client.pde`
+-   **Python**: `Examples/Python/simple_client.py`
+-   **Web (JS/HTML)**: `Examples/Web/simple_client.html`
+-   **Arduino**: `Examples/Arduino/arduino_client.ino`
+-   **Processing**: `Examples/Processing/processing_client.pde`
+
+## Client Disconnect Detection
+
+The router deregisters a client as soon as it disconnects, rather than leaving stale entries in the dashboard:
+-   **MQTT clients** (Python, Arduino, Processing) should register an MQTT **Last Will** that publishes their name to `YuxiSpace/leave` — the broker sends it automatically if the connection drops uncleanly (crash, power loss, network failure). See any file in `Examples/` for how to set this up in your client library. Clients that exit cleanly should also publish to `YuxiSpace/leave` explicitly before disconnecting, since a clean disconnect doesn't trigger the will message.
+-   **Web clients** (using the `/ws/client` WebSocket bridge) are deregistered automatically when their WebSocket connection closes — no extra code needed.
 
 ## TODO
 - [x] Support multiple publishers/subscribers
