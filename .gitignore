@@ -208,3 +208,6 @@ __marimo__/
 
 # Spacebrew tray app settings
 spacebrew_config.json
+
+# macOS
+.DS_Store

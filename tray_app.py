@@ -17,6 +17,12 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 RUNNING_COLOR = (0, 170, 0, 255)
 STOPPED_COLOR = (190, 0, 0, 255)
 
+# macOS's bundled Tcl/Tk 8.5 renders Dark Mode windows unusably (invisible
+# widgets); prefer a Homebrew Python with a modern Tk for the settings UI
+# if one is installed, since the tray app's own dependencies don't need it.
+_HOMEBREW_PYTHON_TK = "/opt/homebrew/bin/python3.11"
+SETTINGS_PYTHON = _HOMEBREW_PYTHON_TK if os.path.exists(_HOMEBREW_PYTHON_TK) else sys.executable
+
 
 def make_icon_image(color):
     size = 64
@@ -47,7 +53,10 @@ class SpacebrewTrayApp:
         return pystray.Menu(
             pystray.MenuItem("Spacebrew 2.0", None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Server Running", self.toggle_server, checked=lambda item: self.running),
+            pystray.MenuItem(
+                lambda item: "Stop Server" if self.running else "Start Server",
+                self.toggle_server,
+            ),
             pystray.MenuItem("Settings...", self.open_settings),
             pystray.MenuItem("Open Web Admin", self.open_web_admin),
             pystray.Menu.SEPARATOR,
@@ -120,7 +129,7 @@ class SpacebrewTrayApp:
             print(message)
 
     def open_settings(self, icon, item):
-        subprocess.Popen([sys.executable, os.path.join(APP_DIR, "settings_window.py")])
+        subprocess.Popen([SETTINGS_PYTHON, os.path.join(APP_DIR, "settings_window.py")])
 
     def open_web_admin(self, icon, item):
         webbrowser.open(f"http://localhost:{self.config.get('web_port', 8088)}")
