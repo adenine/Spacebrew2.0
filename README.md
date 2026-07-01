@@ -86,6 +86,8 @@ Open your browser and navigate to `http://localhost:8088` (or the IP address of 
 ### Web Admin (New)
 A React + Rete.js rebuild of the dashboard, styled after the original 2012 Spacebrew admin UI, with a visual patch bay for connecting publishers to subscribers by dragging or clicking between sockets. This is what the tray app's **Open Web Admin** menu item opens.
 
+![Spacebrew 2.0 patch bay interface](docs/patchbay.png)
+
 It has to be built once before the server can serve it (this produces `web/dist`, which is gitignored — rebuild after pulling changes to `web/`):
 
 ```bash
