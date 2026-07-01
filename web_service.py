@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 import asyncio
@@ -74,6 +76,15 @@ class SpacebrewWebServer:
         self.host = host
         self.port = port
         self.app = FastAPI()
+        # Allow the Vite dev server to hit the API/WebSocket endpoints directly
+        # during development. In production the SPA is served from this same
+        # origin (see setup_routes), so CORS isn't needed there.
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self.templates = Jinja2Templates(directory="templates")
         self.manager = ConnectionManager()
         self.web_client_manager = WebClientManager()
@@ -175,7 +186,11 @@ class SpacebrewWebServer:
         async def get_status():
             # Check MQTT connection
             connected = self.mqtt_service.client.is_connected()
-            return {"connected": connected}
+            return {
+                "connected": connected,
+                "broker": self.mqtt_service.broker,
+                "port": self.mqtt_service.port,
+            }
 
         @app.get("/api/clients")
         async def get_clients():
@@ -218,6 +233,13 @@ class SpacebrewWebServer:
                 return {"message": "Test client spawned"}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
+
+        # New React/Rete.js SPA (built via `cd web && npm run build`), served
+        # once it exists. During development, run `npm run dev` in web/ and
+        # hit this backend directly via CORS instead.
+        spa_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "dist")
+        if os.path.isdir(spa_dist):
+            app.mount("/app", StaticFiles(directory=spa_dist, html=True), name="spa")
 
     def start(self):
         print(f"🚀 Starting Web Interface at http://{self.host}:{self.port}")
